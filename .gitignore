@@ -7,10 +7,17 @@
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
 
-# Ignore all assets by default
-Assets/**
+# Ignore most asset file types (heavy binaries) but keep folders
+Assets/**/*.psd
+Assets/**/*.tga
+Assets/**/*.fbx
+Assets/**/*.wav
+Assets/**/*.mp3
+Assets/**/*.png
+Assets/**/*.jpg
+Assets/**/*.exr
 
-# But KEEP your scripts, scenes, prefabs, and meta files
+# Keep scripts, scenes, prefabs, animations, meta files
 !Assets/**/*.cs
 !Assets/**/*.unity
 !Assets/**/*.prefab
@@ -19,12 +26,12 @@ Assets/**
 !Assets/**/*.mat
 !Assets/**/*.meta
 
-# Keep packages & settings
+# Packages & Project Settings
 !Packages/manifest.json
 !Packages/packages-lock.json
 !ProjectSettings/ProjectVersion.txt
 
-# Ignore editor clutter
+# Editor clutter
 .vs/
 .idea/
 .vscode/
