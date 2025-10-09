@@ -1,0 +1,32 @@
+# Ignore Unity-generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Ignore all assets by default
+Assets/**
+
+# But KEEP your scripts, scenes, prefabs, and meta files
+!Assets/**/*.cs
+!Assets/**/*.unity
+!Assets/**/*.prefab
+!Assets/**/*.controller
+!Assets/**/*.anim
+!Assets/**/*.mat
+!Assets/**/*.meta
+
+# Keep packages & settings
+!Packages/manifest.json
+!Packages/packages-lock.json
+!ProjectSettings/ProjectVersion.txt
+
+# Ignore editor clutter
+.vs/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
