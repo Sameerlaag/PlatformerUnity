@@ -9,10 +9,13 @@ public class WallRunningState : PlayerBaseState
 
     public override void Update(PlayerManager player)
     {
-        if (player.InputManager.HasMovementInput)
-            player.SetState(new MovingState());
+        if (!player.locomotionState.IsWallRunning())
+            player.SetState(new FallingState());
         else if (player.IsJumping())
             player.SetState(new JumpingState());
+        else if (player.locomotionState.IsLocomotion())
+            player.SetState(new MovingState());
+        
     }
 
     public override void Exit(PlayerManager player) { }

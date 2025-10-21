@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -6,7 +7,6 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("References")]
     private InputManager inputManager;
     private CameraBehavior cameraHandler;
-    private WallRun wallRunHandler;
     private PlayerManager playerManager;
     private Rigidbody playerRigidbody;
 
@@ -20,6 +20,7 @@ public class PlayerLocomotion : MonoBehaviour
     [SerializeField] private float groundCheckRadius = 0.3f;
     [SerializeField] private LayerMask groundMask;
     [SerializeField] private float hardLandingThreshold = 7f;
+    [SerializeField] private WallRun wallRun;
 
     private bool wasGrounded;
     private float fallStartHeight;
@@ -31,9 +32,8 @@ public class PlayerLocomotion : MonoBehaviour
         inputManager = GetComponent<InputManager>();
         playerRigidbody = GetComponent<Rigidbody>();
         cameraHandler = FindFirstObjectByType<CameraBehavior>();
-        wallRunHandler = GetComponent<WallRun>();
         playerManager = GetComponent<PlayerManager>();
-
+        wallRun = FindFirstObjectByType<WallRun>();
         wasGrounded = IsGrounded();
         jumpDirection = Vector3.zero;
     }
@@ -45,6 +45,14 @@ public class PlayerLocomotion : MonoBehaviour
         HandleRotation();
         HandleCamera();
         HandleJumpAndGravity();
+        HandleGroundCheck();
+        HandleWallRun();
+    }
+    public void HandleParkourMovement()
+    {
+        UpdateLocomotionState();
+        HandleCamera();
+        HandleWallJumpAndGravity();
         HandleGroundCheck();
         HandleWallRun();
     }
@@ -126,6 +134,23 @@ public class PlayerLocomotion : MonoBehaviour
             velocity.y = jumpForce;
             playerRigidbody.linearVelocity = velocity;
         }
+    }   
+    private void HandleWallJumpAndGravity()
+    {
+        
+            // === WALL JUMP ===
+            if (wallRun.IsRunning && inputManager.isJumping)
+            {
+                // Jump direction = upward + away from the wall (approx 90°)
+                Vector3 jumpDir = Vector3.up * wallRun.wallJumpUpForce + wallRun.WallNormal * wallRun.wallJumpSideForce;
+
+                playerRigidbody.linearVelocity = Vector3.zero;
+                playerRigidbody.AddForce(jumpDir, ForceMode.Impulse);
+
+                wallRun.StopWallRun();
+                return;
+            }
+        
     }
 
     private void HandleGroundCheck()
@@ -161,10 +186,57 @@ public class PlayerLocomotion : MonoBehaviour
     // ---------------- WALL RUN ----------------
     private void HandleWallRun()
     {
-        // Placeholder for now — logic will go here later.
-        // Eventually, this will detect when to start wall-running and call:
-        // playerManager.RequestState(PlayerState.WallRunning);
+        if (!wallRun.IsRunning)
+        {
+            // Try to start wall run
+            if (wallRun.CanStartWallRun(transform))
+            {
+                wallRun.StartWallRun();
+                playerManager.SetLocomotionState(PlayerState.WallRunning);
+            }
+        }
+        else
+        {
+            // Already wall running - maintain it
+            // First check for wall jump
+            if (inputManager.isJumping)
+            {
+                Debug.Log("Wall jump triggered");
+                Vector3 jumpDir = Vector3.up * wallRun.wallJumpUpForce +
+                                wallRun.WallNormal * wallRun.wallJumpSideForce;
+                playerRigidbody.linearVelocity = jumpDir;
+                wallRun.StopWallRun();
+                playerManager.SetLocomotionState(PlayerState.WallJumping);
+                return;
+            }
+
+            // Update timer - if expired, stop
+            bool timerActive = wallRun.UpdateTimer();
+            if (!timerActive)
+            {
+                Debug.Log("Timer expired");
+                wallRun.StopWallRun();
+                playerManager.SetLocomotionState(PlayerState.Falling);
+                return;
+            }
+
+            // Check if still on wall
+            bool onWall = wallRun.CheckForWall(transform);
+            if (!onWall)
+            {
+                Debug.Log("Lost wall contact");
+                wallRun.StopWallRun();
+                playerManager.SetLocomotionState(PlayerState.Falling);
+                return;
+            }
+
+            // Apply wall run velocity
+            Vector3 wallVelocity = wallRun.RunDirection * wallRun.wallRunSpeed;
+            wallVelocity.y = -wallRun.wallRunGravity;
+            playerRigidbody.linearVelocity = wallVelocity;
+        }
     }
+
 
     // ---------------- GROUND CHECK ----------------
     public bool IsGrounded()
@@ -174,17 +246,15 @@ public class PlayerLocomotion : MonoBehaviour
         return Physics.CheckSphere(checkPosition, groundCheckRadius, groundMask);
     }
 
-    private bool IsNearWall()
-    {
-        // Check if there's a wall in front/around the player
-        return Physics.Raycast(transform.position, transform.forward, 1f) ||
-               Physics.Raycast(transform.position, -transform.forward, 1f) ||
-               Physics.Raycast(transform.position, transform.right, 1f) ||
-               Physics.Raycast(transform.position, -transform.right, 1f);
-    }
-
     private void UpdateLocomotionState()
     {
+        // CRITICAL: Check wall running FIRST before anything else
+        if (wallRun.IsRunning)
+        {
+            playerManager.SetLocomotionState(PlayerState.WallRunning);
+            return; // Don't process other states
+        }
+
         if (!IsGrounded())
         {
             playerManager.SetLocomotionState(playerRigidbody.linearVelocity.y > 0
@@ -213,5 +283,12 @@ public class PlayerLocomotion : MonoBehaviour
         // Visualize ground check sphere in editor
         Gizmos.color = IsGrounded() ? Color.green : Color.red;
         Gizmos.DrawWireSphere(transform.position, groundCheckRadius);
+    }
+
+
+
+    public void HandleCombatMovement()
+    {
+        throw new NotImplementedException();
     }
 }

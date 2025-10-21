@@ -9,7 +9,7 @@ public class IdleState : PlayerBaseState
 
     public override void Update(PlayerManager player)
     {
-        if (player.locomotionState.IsMoving())
+        if (player.locomotionState.IsLocomotion())
             player.SetState(new MovingState());
         else if (player.locomotionState.IsJumping())
             player.SetState(new JumpingState());

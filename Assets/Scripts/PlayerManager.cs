@@ -8,6 +8,7 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerBaseState currentState;
     public PlayerState locomotionState;
+    public bool invertAnimation = false;
     public Animator animator;
 
     private void Awake()
@@ -24,14 +25,13 @@ public class PlayerManager : MonoBehaviour
     private void Update()
     {
         inputManager.HandleAllInputs();
-        currentState.Update(this);
-
-        // CRITICAL FIX: Update animation state in Update(), not FixedUpdate()
         UpdateAnimationState();
+        currentState.Update(this);
     }
 
     private void FixedUpdate()
     {
+        // Always use HandleAllMovement - it handles all cases internally
         playerLocomotion.HandleAllMovement();
     }
 
@@ -40,8 +40,9 @@ public class PlayerManager : MonoBehaviour
     {
         // Update animator with current locomotion state
         animator.SetInteger("State", (int)locomotionState);
+        animator.SetBool("Mirror", invertAnimation);
     }
-
+    
     // Getters - using properties instead of methods (C# convention)
     public InputManager InputManager => inputManager;
     public PlayerLocomotion PlayerLocomotion => playerLocomotion;
@@ -49,16 +50,22 @@ public class PlayerManager : MonoBehaviour
 
     public void SetLocomotionState(PlayerState newState)
     {
-        if (locomotionState == newState)
+        this.SetLocomotionState(newState, false);
+    }    
+
+    public void SetLocomotionState(PlayerState newState, bool invertAnimation)
+    {
+        if (locomotionState == newState && !invertAnimation)
             return;
 
         PlayerState previousState = locomotionState;
         locomotionState = newState;
+        this.invertAnimation = invertAnimation;
 
         // Trigger immediate animation update for critical transitions
         if (ShouldForceAnimationUpdate(previousState, newState))
         {
-            animator.SetInteger("State", (int)locomotionState);
+            UpdateAnimationState();
         }
 
         Debug.Log($"Locomotion: {previousState} → {newState}");
@@ -101,9 +108,12 @@ public enum PlayerState
     Running = 2,
     Jumping = 3,
     WallRunning = 4,
+    WallRightRunning = -4,
     Falling = 5,
     Landing = 6,
     HardLanding = 7,
+    WallJumping = 8,
+    Combat = 9,
     Dead = -1
 }
 
@@ -112,6 +122,7 @@ public static class PlayerStateExtensions
     public static bool IsIdle(this PlayerState state) => state == PlayerState.Idle;
     public static bool IsMoving(this PlayerState state) => state == PlayerState.Moving;
     public static bool IsRunning(this PlayerState state) => state == PlayerState.Running;
+    public static bool IsWallRunning(this PlayerState state) => state == PlayerState.WallRunning;
     public static bool IsJumping(this PlayerState state) => state == PlayerState.Jumping;
     public static bool IsFalling(this PlayerState state) => state == PlayerState.Falling;
     public static bool IsLanding(this PlayerState state) => state == PlayerState.Landing;

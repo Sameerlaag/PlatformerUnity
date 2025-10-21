@@ -9,7 +9,6 @@ public class LandingState : PlayerBaseState
 
     public override void Update(PlayerManager player)
     {
-        Debug.Log("playing landing animation");
         if (player.PlayerLocomotion.IsGrounded())
             player.SetState(new IdleState());
     }
