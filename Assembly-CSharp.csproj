@@ -61,23 +61,14 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.1.11f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\StateManger\IdleState.cs" />
-    <Compile Include="Assets\Scripts\StateManger\RunningState.cs" />
-    <Compile Include="Assets\Scripts\StateManger\MovingState.cs" />
-    <Compile Include="Assets\Scripts\StateManger\WallRunningState.cs" />
-    <Compile Include="Assets\Scripts\StateManger\JumpingState.cs" />
     <Compile Include="Assets\Scripts\PlayerControls.cs" />
     <Compile Include="Assets\Scripts\PlayerManager.cs" />
     <Compile Include="Assets\Scripts\InputManager.cs" />
     <Compile Include="Assets\Scripts\CameraBehavior.cs" />
     <Compile Include="Assets\DoubleL\Demo\DemoCameraController.cs" />
-    <Compile Include="Assets\Scripts\StateManger\PlayerBaseState.cs" />
     <Compile Include="Assets\Scripts\WallRun.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
-    <Compile Include="Assets\Scripts\StateManger\HardLandingState.cs" />
-    <Compile Include="Assets\Scripts\StateManger\LandingState.cs" />
     <Compile Include="Assets\Scripts\PlayerLocomotion.cs" />
-    <Compile Include="Assets\Scripts\StateManger\FallingState.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

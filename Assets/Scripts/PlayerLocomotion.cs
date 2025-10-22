@@ -1,294 +1,181 @@
-using System;
 using UnityEngine;
+using UnityEngine.Playables;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerLocomotion : MonoBehaviour
 {
     [Header("References")]
-    private InputManager inputManager;
+    private PlayerManager player;
+    public Rigidbody Rigidbody { get; private set; }
+    private InputManager input;
     private CameraBehavior cameraHandler;
-    private PlayerManager playerManager;
-    private Rigidbody playerRigidbody;
+    private WallRun wallRun;
 
     [Header("Movement Settings")]
-    public float movementSpeed = 1.4f;
-    public float runningSpeedModifier = 3f;
+    public float moveSpeed = 2f;
+    public float runSpeed = 5f;
     public float rotationSpeed = 15f;
     public float jumpForce = 5f;
+    public LayerMask groundMask;
 
-    [Header("Ground & Fall Settings")]
-    [SerializeField] private float groundCheckRadius = 0.3f;
-    [SerializeField] private LayerMask groundMask;
-    [SerializeField] private float hardLandingThreshold = 7f;
-    [SerializeField] private WallRun wallRun;
+    [Header("Jump Settings")]
+    public float jumpCooldown = 0.5f;
+    private bool canJump = true;
+    private float jumpRecoveryTimer = 0f;
 
+    private float groundCheckRadius = 0.3f;
     private bool wasGrounded;
-    private float fallStartHeight;
-    private float fallDistance;
-    private Vector3 jumpDirection; // Store movement direction when jumping
+    public float coyoteTime = 0.15f;
+    private float coyoteTimer;
 
     private void Awake()
     {
-        inputManager = GetComponent<InputManager>();
-        playerRigidbody = GetComponent<Rigidbody>();
+        player = GetComponent<PlayerManager>();
+        Rigidbody = GetComponent<Rigidbody>();
+        input = GetComponent<InputManager>();
         cameraHandler = FindFirstObjectByType<CameraBehavior>();
-        playerManager = GetComponent<PlayerManager>();
         wallRun = FindFirstObjectByType<WallRun>();
-        wasGrounded = IsGrounded();
-        jumpDirection = Vector3.zero;
     }
 
-    public void HandleAllMovement()
+    private void FixedUpdate()
     {
-        UpdateLocomotionState();
-        HandleMovement();
-        HandleRotation();
-        HandleCamera();
-        HandleJumpAndGravity();
         HandleGroundCheck();
-        HandleWallRun();
+        UpdateJumpCooldown();
     }
-    public void HandleParkourMovement()
+
+
+    public void HandleMovementForState(PlayerState state)
     {
-        UpdateLocomotionState();
+        UpdateJumpCooldown();
         HandleCamera();
-        HandleWallJumpAndGravity();
-        HandleGroundCheck();
-        HandleWallRun();
-    }
 
-    // ---------------- MOVEMENT ----------------
-    private void HandleMovement()
-    {
-        Vector3 moveDirection;
-
-        if (IsGrounded())
+        switch (state)
         {
-            // Ground movement - respond to input normally
-            moveDirection = cameraHandler.transform.forward * inputManager.verticalInput;
-            moveDirection += cameraHandler.transform.right * inputManager.horizontalInput;
-            moveDirection.Normalize();
-            moveDirection.y = 0f;
-
-            float currentSpeed = inputManager.isRunning
-                ? movementSpeed * runningSpeedModifier
-                : movementSpeed;
-
-            Vector3 movementVelocity = moveDirection * currentSpeed;
-            movementVelocity.y = playerRigidbody.linearVelocity.y;
-            playerRigidbody.linearVelocity = movementVelocity;
-        }
-        else
-        {
-            // Airborne - maintain jump direction without input control
-            Vector3 airborneVelocity = jumpDirection;
-            airborneVelocity.y = playerRigidbody.linearVelocity.y;
-            playerRigidbody.linearVelocity = airborneVelocity;
+            case PlayerState.Idle:
+                HandleIdle();
+                break;
+            case PlayerState.Moving:
+                HandleMove();
+                break;
+            case PlayerState.Jumping:
+                HandleJump();
+                break;
+            case PlayerState.Falling:
+                HandleFalling();
+                break;
+            case PlayerState.WallRunning:
+                HandleWallRun();
+                break;
+            case PlayerState.Landing:
+            case PlayerState.HardLanding:
+                break; // root motion handles these
         }
     }
 
-    // ---------------- ROTATION ----------------
-    private void HandleRotation()
+    private void HandleCamera() { cameraHandler.HandleCameraMovement(input.cameraHorizontal, input.cameraVertical, input.zoomInput); }
+
+    private void HandleIdle()
     {
-        // Only allow rotation when grounded
-        if (!IsGrounded())
-            return;
-
-        Vector3 targetDirection = cameraHandler.transform.forward * inputManager.verticalInput;
-        targetDirection += cameraHandler.transform.right * inputManager.horizontalInput;
-        targetDirection.Normalize();
-        targetDirection.y = 0f;
-
-        if (targetDirection == Vector3.zero)
-            targetDirection = transform.forward;
-
-        Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
-        Quaternion playerRotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-        transform.rotation = playerRotation;
+        Vector3 vel = Rigidbody.linearVelocity;
+        vel.x = vel.z = 0;
+        Rigidbody.linearVelocity = vel;
     }
 
-    // ---------------- CAMERA ----------------
-    private void HandleCamera()
+    private void HandleMove()
     {
-        cameraHandler.HandleCameraMovement(
-            inputManager.cameraHorizontal,
-            inputManager.cameraVertical,
-            inputManager.zoomInput
-        );
+        Vector3 moveDir = cameraHandler.transform.forward * input.verticalInput +
+                          cameraHandler.transform.right * input.horizontalInput;
+        moveDir.Normalize();
+        moveDir.y = 0;
+
+        float targetSpeed = input.isRunning ? runSpeed : moveSpeed;
+        Vector3 velocity = moveDir * targetSpeed;
+        velocity.y = Rigidbody.linearVelocity.y;
+
+        Rigidbody.linearVelocity = velocity;
+        HandleRotation(moveDir);
     }
 
-    // ---------------- JUMP & FALL ----------------
-    private void HandleJumpAndGravity()
+    private void HandleRotation(Vector3 direction)
     {
-        if (inputManager.isJumping && IsGrounded())
+        if (direction == Vector3.zero) return;
+        Quaternion targetRot = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+    }
+    private void HandleJump()
+    {
+        if (!canJump || !IsGrounded()) return;
+
+        canJump = false;
+        jumpRecoveryTimer = jumpCooldown;
+
+        Vector3 vel = Rigidbody.linearVelocity;
+        vel.y = jumpForce;
+        Rigidbody.linearVelocity = vel;
+
+        player.SetState(PlayerState.Jumping);
+    }
+
+
+    private void HandleFalling()
+    {
+        // Check if player is in air and moving downward
+        if (!IsGrounded() && Rigidbody.linearVelocity.y <= 0f)
         {
-            // Store current horizontal velocity before jumping
-            jumpDirection = new Vector3(
-                playerRigidbody.linearVelocity.x,
-                0f,
-                playerRigidbody.linearVelocity.z
-            );
-
-            // Apply jump force
-            Vector3 velocity = playerRigidbody.linearVelocity;
-            velocity.y = jumpForce;
-            playerRigidbody.linearVelocity = velocity;
-        }
-    }   
-    private void HandleWallJumpAndGravity()
-    {
-        
-            // === WALL JUMP ===
-            if (wallRun.IsRunning && inputManager.isJumping)
+            // If already in JumpingState, switch to FallingState
+            if (player.CurrentState is PlayerState.Jumping)
             {
-                // Jump direction = upward + away from the wall (approx 90°)
-                Vector3 jumpDir = Vector3.up * wallRun.wallJumpUpForce + wallRun.WallNormal * wallRun.wallJumpSideForce;
-
-                playerRigidbody.linearVelocity = Vector3.zero;
-                playerRigidbody.AddForce(jumpDir, ForceMode.Impulse);
-
-                wallRun.StopWallRun();
-                return;
+                player.SetState(PlayerState.Falling);
             }
-        
+        }
     }
 
+    private void HandleWallRun()
+    {
+        if (wallRun == null || !wallRun.IsRunning) return;
+        wallRun.ApplyWallRunMovement(Rigidbody);
+    }
+
+    public bool IsGrounded()
+    {
+        Vector3 checkPos = transform.position + Vector3.down * 0.1f;
+        return Physics.CheckSphere(checkPos, groundCheckRadius, groundMask);
+    }
     private void HandleGroundCheck()
     {
         bool grounded = IsGrounded();
 
-        // Detect landing
-        if (!wasGrounded && grounded)
+        if (grounded)
         {
-            fallDistance = fallStartHeight - transform.position.y;
-            jumpDirection = Vector3.zero; // Clear jump direction on landing
+            coyoteTimer = coyoteTime;
+            if (jumpRecoveryTimer <= 0f)
+                canJump = true;
         }
-
-        // Detect fall start
-        if (wasGrounded && !grounded)
+        else
         {
-            fallStartHeight = transform.position.y;
-
-            // If falling without jumping, store current velocity
-            if (jumpDirection == Vector3.zero)
-            {
-                jumpDirection = new Vector3(
-                    playerRigidbody.linearVelocity.x,
-                    0f,
-                    playerRigidbody.linearVelocity.z
-                );
-            }
+            coyoteTimer -= Time.deltaTime;
         }
 
         wasGrounded = grounded;
     }
 
-    // ---------------- WALL RUN ----------------
-    private void HandleWallRun()
+    private void UpdateJumpCooldown()
     {
-        if (!wallRun.IsRunning)
+        if (jumpRecoveryTimer > 0f)
         {
-            // Try to start wall run
-            if (wallRun.CanStartWallRun(transform))
-            {
-                wallRun.StartWallRun();
-                playerManager.SetLocomotionState(PlayerState.WallRunning);
-            }
-        }
-        else
-        {
-            // Already wall running - maintain it
-            // First check for wall jump
-            if (inputManager.isJumping)
-            {
-                Debug.Log("Wall jump triggered");
-                Vector3 jumpDir = Vector3.up * wallRun.wallJumpUpForce +
-                                wallRun.WallNormal * wallRun.wallJumpSideForce;
-                playerRigidbody.linearVelocity = jumpDir;
-                wallRun.StopWallRun();
-                playerManager.SetLocomotionState(PlayerState.WallJumping);
-                return;
-            }
-
-            // Update timer - if expired, stop
-            bool timerActive = wallRun.UpdateTimer();
-            if (!timerActive)
-            {
-                Debug.Log("Timer expired");
-                wallRun.StopWallRun();
-                playerManager.SetLocomotionState(PlayerState.Falling);
-                return;
-            }
-
-            // Check if still on wall
-            bool onWall = wallRun.CheckForWall(transform);
-            if (!onWall)
-            {
-                Debug.Log("Lost wall contact");
-                wallRun.StopWallRun();
-                playerManager.SetLocomotionState(PlayerState.Falling);
-                return;
-            }
-
-            // Apply wall run velocity
-            Vector3 wallVelocity = wallRun.RunDirection * wallRun.wallRunSpeed;
-            wallVelocity.y = -wallRun.wallRunGravity;
-            playerRigidbody.linearVelocity = wallVelocity;
+            jumpRecoveryTimer -= Time.deltaTime;
         }
     }
 
-
-    // ---------------- GROUND CHECK ----------------
-    public bool IsGrounded()
+    public float GetHorizontalVelocityMagnitude()
     {
-        // Check sphere below the player's center, not at center
-        Vector3 checkPosition = transform.position - Vector3.up * 0.1f;
-        return Physics.CheckSphere(checkPosition, groundCheckRadius, groundMask);
-    }
-
-    private void UpdateLocomotionState()
-    {
-        // CRITICAL: Check wall running FIRST before anything else
-        if (wallRun.IsRunning)
-        {
-            playerManager.SetLocomotionState(PlayerState.WallRunning);
-            return; // Don't process other states
-        }
-
-        if (!IsGrounded())
-        {
-            playerManager.SetLocomotionState(playerRigidbody.linearVelocity.y > 0
-                ? PlayerState.Jumping
-                : PlayerState.Falling);
-        }
-        else
-        {
-            if (!wasGrounded)
-            {
-                playerManager.SetLocomotionState(fallDistance > hardLandingThreshold
-                    ? PlayerState.HardLanding
-                    : PlayerState.Landing);
-            }
-            else
-            {
-                playerManager.SetLocomotionState(inputManager.HasMovementInput
-                    ? (inputManager.isRunning ? PlayerState.Running : PlayerState.Moving)
-                    : PlayerState.Idle);
-            }
-        }
+        Vector3 flatVel = new Vector3(Rigidbody.linearVelocity.x, 0, Rigidbody.linearVelocity.z);
+        return flatVel.magnitude;
     }
 
     private void OnDrawGizmosSelected()
     {
-        // Visualize ground check sphere in editor
         Gizmos.color = IsGrounded() ? Color.green : Color.red;
-        Gizmos.DrawWireSphere(transform.position, groundCheckRadius);
-    }
-
-
-
-    public void HandleCombatMovement()
-    {
-        throw new NotImplementedException();
+        Gizmos.DrawWireSphere(transform.position - Vector3.up * 0.1f, groundCheckRadius);
     }
 }

@@ -1544,6 +1544,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 9100000, guid: 5a35780126665ec4190c39f1329820de, type: 2}
     - target: {fileID: 5866666021909216657, guid: f1e8e1bfafe7fa241ba6b4181f3eba85, type: 3}
+      propertyPath: m_AnimatePhysics
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: f1e8e1bfafe7fa241ba6b4181f3eba85, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0
       objectReference: {fileID: 0}
@@ -2772,14 +2776,13 @@ MonoBehaviour:
   wallMask:
     serializedVersion: 2
     m_Bits: 64
-  minSpeedToStart: 3
   wallRunSpeed: 8
   wallRunGravity: 0.5
+  wallStickForce: 5
+  wallRunHeight: 0.2
   wallRunDuration: 1.2
   wallJumpUpForce: 7
   wallJumpSideForce: 6
-  showDebugRays: 1
-  showGizmos: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

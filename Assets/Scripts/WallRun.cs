@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [System.Serializable]
 public class WallRun : MonoBehaviour
@@ -9,13 +9,13 @@ public class WallRun : MonoBehaviour
     public LayerMask wallMask;
 
     [Header("Activation Requirements")]
-    [Tooltip("Minimum speed required to start wall running")]
+    [Tooltip("Minimum horizontal speed required to start wall running")]
     public float minSpeedToStart = 3f;
 
     [Header("Movement Settings")]
     public float wallRunSpeed = 8f;
     public float wallRunGravity = 0.5f;
-    public float wallRunDuration = 3f;
+    public float wallRunDuration = 1.5f;
 
     [Header("Jump Settings")]
     public float wallJumpUpForce = 7f;
@@ -25,41 +25,41 @@ public class WallRun : MonoBehaviour
     public bool showDebugRays = true;
     public bool showGizmos = true;
 
-    // State
+    // --- State ---
     private Vector3 wallNormal;
     private Vector3 runDirection;
     private bool isWallRight;
     private bool isWallRunning;
     private float wallRunTimer;
+    private float currentSpeed;
 
-    // Debug data
+    // --- Debug Data ---
     private bool lastRightHit;
     private bool lastLeftHit;
     private Vector3 lastHitPoint;
     private Vector3 lastHitNormal;
-    private float currentSpeed;
     private string debugMessage = "";
 
-    // Cached components
+    // --- Cached ---
     private Rigidbody rb;
+    private PlayerManager player;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        player = GetComponent<PlayerManager>();
     }
 
-    // Public getters
     public bool IsRunning => isWallRunning;
     public bool IsWallRight => isWallRight;
     public Vector3 RunDirection => runDirection;
     public Vector3 WallNormal => wallNormal;
 
-    /// <summary>
-    /// Checks if a wall is present and if conditions are met to wall run
-    /// </summary>
+    // ===========================================================
+    // === ENTRY CONDITIONS ======================================
+    // ===========================================================
     public bool CanStartWallRun(Transform playerTransform)
     {
-        // Must have sufficient forward momentum
         Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
         currentSpeed = horizontalVelocity.magnitude;
 
@@ -69,41 +69,43 @@ public class WallRun : MonoBehaviour
             return false;
         }
 
-        // Check for wall
         if (!DetectWall(playerTransform))
         {
-            debugMessage = "No wall detected";
+            debugMessage = "No valid wall detected";
             return false;
         }
 
-        // Must be approaching wall at sufficient angle (not head-on or parallel)
+        // Check if approach angle is reasonable (not perpendicular to wall)
         Vector3 playerForward = playerTransform.forward;
-        playerForward.y = 0;
-        playerForward.Normalize();
+        float dot = Vector3.Dot(playerForward, wallNormal);
+        if (Mathf.Abs(dot) > 0.8f)
+        {
+            debugMessage = "Approach angle too steep";
+            return false;
+        }
 
         return true;
     }
 
-    /// <summary>
-    /// Detects wall on left or right side
-    /// </summary>
+    // ===========================================================
+    // === WALL DETECTION ========================================
+    // ===========================================================
     private bool DetectWall(Transform playerTransform)
     {
         Vector3 origin = playerTransform.position + Vector3.up * wallCheckHeight;
         lastRightHit = false;
         lastLeftHit = false;
 
-        // Check right side
+        // --- Right side ---
         if (Physics.Raycast(origin, playerTransform.right, out RaycastHit rightHit, wallCheckDistance, wallMask))
         {
             lastRightHit = true;
             lastHitPoint = rightHit.point;
             lastHitNormal = rightHit.normal;
 
-            // Ensure it's actually a vertical wall (normal points mostly horizontal)
-            if (Mathf.Abs(rightHit.normal.y) < 0.2f)
+            if (Mathf.Abs(rightHit.normal.y) > 0.3f)
             {
-                debugMessage = $"Right surface too angled (Y: {rightHit.normal.y:F2})";
+                debugMessage = $"Right wall angled too much (Y: {rightHit.normal.y:F2})";
                 return false;
             }
 
@@ -113,17 +115,16 @@ public class WallRun : MonoBehaviour
             return true;
         }
 
-        // Check left side
+        // --- Left side ---
         if (Physics.Raycast(origin, -playerTransform.right, out RaycastHit leftHit, wallCheckDistance, wallMask))
         {
             lastLeftHit = true;
             lastHitPoint = leftHit.point;
             lastHitNormal = leftHit.normal;
 
-            // Ensure it's actually a vertical wall
             if (Mathf.Abs(leftHit.normal.y) > 0.3f)
             {
-                debugMessage = $"Left surface too angled (Y: {leftHit.normal.y:F2})";
+                debugMessage = $"Left wall angled too much (Y: {leftHit.normal.y:F2})";
                 return false;
             }
 
@@ -136,37 +137,60 @@ public class WallRun : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Checks if wall is still present (for continuing wall run)
-    /// </summary>
     public bool CheckForWall(Transform playerTransform)
     {
         return DetectWall(playerTransform);
     }
 
+    // ===========================================================
+    // === STATE CONTROL =========================================
+    // ===========================================================
     public void StartWallRun()
     {
-        Debug.Log("start");
+        if (isWallRunning) return;
+
         isWallRunning = true;
         wallRunTimer = wallRunDuration;
-        Debug.Log($"<color=green>WALL RUN STARTED</color> on {(isWallRight ? "RIGHT" : "LEFT")} wall | Speed: {currentSpeed:F2}");
+        player.Animator.applyRootMotion = true;
+
+        Debug.Log($"<color=green>WALL RUN STARTED</color> ({(isWallRight ? "RIGHT" : "LEFT")})");
     }
 
     public void StopWallRun()
     {
-        if (!isWallRunning) return; // Already stopped, don't log again
+        if (!isWallRunning) return;
 
         isWallRunning = false;
+        player.Animator.applyRootMotion = false;
+
         Debug.Log("<color=red>WALL RUN STOPPED</color>");
     }
 
     public bool UpdateTimer()
     {
         wallRunTimer -= Time.deltaTime;
-        return wallRunTimer > 0f; // Just return status, don't stop here
+        return wallRunTimer > 0f;
     }
 
-    // GIZMOS - Always visible in Scene view
+    // ===========================================================
+    // === MOVEMENT EXECUTION ====================================
+    // ===========================================================
+    public void ApplyWallRunMovement(Rigidbody rb)
+    {
+        if (!isWallRunning) return;
+
+        // Root motion active → skip manual velocity if animation drives motion
+        if (player.Animator.applyRootMotion) return;
+
+        // Keep player glued to wall while moving forward
+        Vector3 velocity = runDirection * wallRunSpeed;
+        velocity.y = -wallRunGravity;
+        rb.linearVelocity = velocity;
+    }
+
+    // ===========================================================
+    // === DEBUG VISUALIZATION ===================================
+    // ===========================================================
     private void OnDrawGizmos()
     {
         if (!showGizmos) return;
@@ -174,66 +198,52 @@ public class WallRun : MonoBehaviour
         Transform t = transform;
         Vector3 origin = t.position + Vector3.up * wallCheckHeight;
 
-        // Draw detection rays
+        // Right ray
         Gizmos.color = lastRightHit ? Color.green : Color.red;
         Gizmos.DrawLine(origin, origin + t.right * wallCheckDistance);
 
+        // Left ray
         Gizmos.color = lastLeftHit ? Color.green : Color.red;
         Gizmos.DrawLine(origin, origin + -t.right * wallCheckDistance);
 
-        // Draw hit point and normal
         if (lastRightHit || lastLeftHit)
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(lastHitPoint, 0.1f);
-
             Gizmos.color = Color.yellow;
             Gizmos.DrawLine(lastHitPoint, lastHitPoint + lastHitNormal * 0.5f);
         }
 
-        // Draw wall run state
         if (isWallRunning)
         {
-            // Wall normal
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawLine(t.position, t.position + wallNormal * 2f);
-
-            // Run direction
             Gizmos.color = Color.magenta;
             Gizmos.DrawLine(t.position, t.position + runDirection * 2f);
-
-            // Speed indicator
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(t.position + Vector3.up * 2f, 0.2f);
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(t.position, t.position + wallNormal * 1.5f);
         }
     }
 
-    // GUI - Always visible in Game view
     private void OnGUI()
     {
         if (!showDebugRays) return;
 
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 14;
-        style.normal.textColor = Color.white;
-        style.alignment = TextAnchor.UpperLeft;
+        GUIStyle style = new GUIStyle
+        {
+            fontSize = 14,
+            normal = { textColor = Color.white },
+            alignment = TextAnchor.UpperLeft
+        };
 
-        string debugText = "=== WALL RUN DEBUG ===\n";
-        debugText += $"Speed: {currentSpeed:F2} (min: {minSpeedToStart})\n";
-        debugText += $"Right Hit: {lastRightHit}\n";
-        debugText += $"Left Hit: {lastLeftHit}\n";
-        debugText += $"Wall Running: {isWallRunning}\n";
-        debugText += $"Timer: {wallRunTimer:F2}s\n";
-        debugText += $"\n{debugMessage}";
+        string debugText =
+            "=== WALL RUN DEBUG ===\n" +
+            $"Speed: {currentSpeed:F2} (min {minSpeedToStart})\n" +
+            $"Right Hit: {lastRightHit}\n" +
+            $"Left Hit: {lastLeftHit}\n" +
+            $"Wall Running: {isWallRunning}\n" +
+            $"Timer: {wallRunTimer:F2}s\n" +
+            $"{debugMessage}";
 
-        // Black background
         GUI.Box(new Rect(10, 10, 350, 180), "");
         GUI.Label(new Rect(15, 15, 340, 170), debugText, style);
-
-        // Color indicator
-        Color indicatorColor = isWallRunning ? Color.green :
-                               (lastRightHit || lastLeftHit) ? Color.yellow : Color.red;
-        GUI.backgroundColor = indicatorColor;
-        GUI.Box(new Rect(370, 10, 20, 20), "");
     }
 }
