@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.Windows;
 
 [RequireComponent(typeof(PlayerLocomotion), typeof(InputManager), typeof(Animator))]
 public class PlayerManager : MonoBehaviour
@@ -9,6 +10,9 @@ public class PlayerManager : MonoBehaviour
     public PlayerLocomotion Locomotion { get; private set; }
     public Animator Animator { get; private set; }
     public WallRun WallRun { get; private set; }
+
+    private CameraBehavior cameraHandler;
+
 
     [Header("State Management")]
     public PlayerState CurrentState { get; private set; } = PlayerState.Idle;
@@ -20,6 +24,8 @@ public class PlayerManager : MonoBehaviour
         Input = GetComponent<InputManager>();
         Locomotion = GetComponent<PlayerLocomotion>();
         Animator = GetComponent<Animator>();
+        cameraHandler = FindFirstObjectByType<CameraBehavior>();
+
         WallRun = GetComponent<WallRun>();
         Animator.applyRootMotion = false;
     }
@@ -39,6 +45,7 @@ public class PlayerManager : MonoBehaviour
 
         // 3️⃣ Update animations
         UpdateAnimator();
+        HandleCamera();
 
         // 4️⃣ Apply movement
         Locomotion.HandleMovementForState(CurrentState);
@@ -77,9 +84,10 @@ public class PlayerManager : MonoBehaviour
     public void SetState(PlayerState newState)
     {
         if (CurrentState == newState) return;
-
+        Debug.Log("state " + CurrentState + " > " + newState);
         CurrentState = newState;
         Animator.applyRootMotion = UsesRootMotion(newState);
+
     }
 
     private void UpdateAnimator()
@@ -89,7 +97,6 @@ public class PlayerManager : MonoBehaviour
         Animator.SetFloat("MoveSpeed", moveSpeed);
         Animator.SetInteger("State", (int)CurrentState);
         Animator.SetBool("Mirror", InvertAnimation);
-        Debug.Log("state " + Animator.GetInteger("State") + "> " + CurrentState);
     }
 
     private bool UsesRootMotion(PlayerState state)
@@ -98,6 +105,8 @@ public class PlayerManager : MonoBehaviour
                state == PlayerState.Combat ||
                state == PlayerState.Landing;
     }
+    private void HandleCamera() { cameraHandler.HandleCameraMovement(Input.cameraHorizontal, Input.cameraVertical, Input.zoomInput); }
+
 }
 public enum PlayerState { Idle = 0, Moving = 1, Running = 2, Jumping = 3, WallRunning = 4, WallRightRunning = -4, Falling = 5, Landing = 6, HardLanding = 7, WallJumping = 8, Combat = 9, Dead = -1 }
 public static class PlayerStateExtensions { 

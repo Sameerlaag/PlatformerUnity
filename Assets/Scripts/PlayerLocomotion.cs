@@ -8,7 +8,6 @@ public class PlayerLocomotion : MonoBehaviour
     private PlayerManager player;
     public Rigidbody Rigidbody { get; private set; }
     private InputManager input;
-    private CameraBehavior cameraHandler;
     private WallRun wallRun;
 
     [Header("Movement Settings")]
@@ -17,6 +16,8 @@ public class PlayerLocomotion : MonoBehaviour
     public float rotationSpeed = 15f;
     public float jumpForce = 5f;
     public LayerMask groundMask;
+    private CameraBehavior cameraHandler;
+
 
     [Header("Jump Settings")]
     public float jumpCooldown = 0.5f;
@@ -34,6 +35,7 @@ public class PlayerLocomotion : MonoBehaviour
         Rigidbody = GetComponent<Rigidbody>();
         input = GetComponent<InputManager>();
         cameraHandler = FindFirstObjectByType<CameraBehavior>();
+
         wallRun = FindFirstObjectByType<WallRun>();
     }
 
@@ -47,7 +49,6 @@ public class PlayerLocomotion : MonoBehaviour
     public void HandleMovementForState(PlayerState state)
     {
         UpdateJumpCooldown();
-        HandleCamera();
 
         switch (state)
         {
@@ -72,7 +73,6 @@ public class PlayerLocomotion : MonoBehaviour
         }
     }
 
-    private void HandleCamera() { cameraHandler.HandleCameraMovement(input.cameraHorizontal, input.cameraVertical, input.zoomInput); }
 
     private void HandleIdle()
     {
