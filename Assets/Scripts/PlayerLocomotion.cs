@@ -1,33 +1,29 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Playables;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerLocomotion : MonoBehaviour
 {
-    [Header("References")]
-    private PlayerManager player;
+    [Header("References")] private PlayerManager player;
     public Rigidbody Rigidbody { get; private set; }
     private InputManager input;
     private WallRun wallRun;
-
-    [Header("Movement Settings")]
-    public float moveSpeed = 2f;
+    [Header("Movement Settings")] public float moveSpeed = 2f;
     public float runSpeed = 5f;
     public float rotationSpeed = 15f;
     public float jumpForce = 5f;
     public LayerMask groundMask;
     private CameraBehavior cameraHandler;
-
-
-    [Header("Jump Settings")]
-    public float jumpCooldown = 0.5f;
+    [Header("Jump Settings")] public float jumpCooldown = 0.5f;
     private bool canJump = true;
     private float jumpRecoveryTimer = 0f;
-
-    private float groundCheckRadius = 0.3f;
+    private float groundCheckRadius = 0.5f;
     private bool wasGrounded;
     public float coyoteTime = 0.15f;
     private float coyoteTimer;
+    
+    [SerializeField] private CapsuleCollider capsule;
+
 
     private void Awake()
     {
@@ -35,7 +31,6 @@ public class PlayerLocomotion : MonoBehaviour
         Rigidbody = GetComponent<Rigidbody>();
         input = GetComponent<InputManager>();
         cameraHandler = FindFirstObjectByType<CameraBehavior>();
-
         wallRun = FindFirstObjectByType<WallRun>();
     }
 
@@ -45,34 +40,21 @@ public class PlayerLocomotion : MonoBehaviour
         UpdateJumpCooldown();
     }
 
-
     public void HandleMovementForState(PlayerState state)
     {
         UpdateJumpCooldown();
-
         switch (state)
         {
-            case PlayerState.Idle:
-                HandleIdle();
-                break;
-            case PlayerState.Moving:
-                HandleMove();
-                break;
-            case PlayerState.Jumping:
-                HandleJump();
-                break;
-            case PlayerState.Falling:
-                HandleFalling();
-                break;
-            case PlayerState.WallRunning:
-                HandleWallRun();
-                break;
+            case PlayerState.Idle: HandleIdle(); break;
+            case PlayerState.Moving: HandleMove(); break;
+            case PlayerState.Jumping: HandleJump(); break;
+            case PlayerState.Falling: HandleFalling(); break;
+            case PlayerState.WallRunning: HandleWallRun(); break;
             case PlayerState.Landing:
-            case PlayerState.HardLanding:
-                break; // root motion handles these
+            case PlayerState.HardLanding: break;
+            // root motion handles these
         }
     }
-
 
     private void HandleIdle()
     {
@@ -87,11 +69,9 @@ public class PlayerLocomotion : MonoBehaviour
                           cameraHandler.transform.right * input.horizontalInput;
         moveDir.Normalize();
         moveDir.y = 0;
-
         float targetSpeed = input.isRunning ? runSpeed : moveSpeed;
         Vector3 velocity = moveDir * targetSpeed;
         velocity.y = Rigidbody.linearVelocity.y;
-
         Rigidbody.linearVelocity = velocity;
         HandleRotation(moveDir);
     }
@@ -102,20 +82,17 @@ public class PlayerLocomotion : MonoBehaviour
         Quaternion targetRot = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
     }
+
     private void HandleJump()
     {
         if (!canJump || !IsGrounded()) return;
-
         canJump = false;
         jumpRecoveryTimer = jumpCooldown;
-
         Vector3 vel = Rigidbody.linearVelocity;
         vel.y = jumpForce;
         Rigidbody.linearVelocity = vel;
-
         player.SetState(PlayerState.Jumping);
     }
-
 
     private void HandleFalling()
     {
@@ -138,18 +115,17 @@ public class PlayerLocomotion : MonoBehaviour
 
     public bool IsGrounded()
     {
-        Vector3 checkPos = transform.position + Vector3.down * 0.1f;
+        Vector3 checkPos = transform.position + Vector3.down * 0.05f; // small offset
         return Physics.CheckSphere(checkPos, groundCheckRadius, groundMask);
     }
+
     private void HandleGroundCheck()
     {
         bool grounded = IsGrounded();
-
         if (grounded)
         {
             coyoteTimer = coyoteTime;
-            if (jumpRecoveryTimer <= 0f)
-                canJump = true;
+            if (jumpRecoveryTimer <= 0f) canJump = true;
         }
         else
         {
