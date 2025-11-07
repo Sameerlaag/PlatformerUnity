@@ -13,9 +13,9 @@ public class EnvironmentInteractionContext
     private MultiRotationConstraint _rightHandMultiRotationConstraint;
     private Rigidbody _rigidbody;
     private CapsuleCollider _rootCollider;
-
+    private LayerMask _interactableMask;
     private Transform _rootTransform;
-    
+
     public enum EBodySide
     {
         LEFT,
@@ -23,6 +23,7 @@ public class EnvironmentInteractionContext
     }
 
     public EnvironmentInteractionContext(
+        LayerMask interactableMask,
         TwoBoneIKConstraint leftFootIkConstraint, TwoBoneIKConstraint rightFootIkConstraint,
         MultiRotationConstraint leftFootMultiRotationConstraint,
         MultiRotationConstraint rightFootMultiRotationConstraint, TwoBoneIKConstraint leftHandIkConstraint,
@@ -31,6 +32,7 @@ public class EnvironmentInteractionContext
         CapsuleCollider rootCollider,
         Transform rootTransform)
     {
+        _interactableMask = interactableMask;
         _leftFootIkConstraint = leftFootIkConstraint;
         _rightFootIkConstraint = rightFootIkConstraint;
         _leftFootMultiRotationConstraint = leftFootMultiRotationConstraint;
@@ -44,6 +46,7 @@ public class EnvironmentInteractionContext
         _rootTransform = rootTransform;
     }
 
+    public LayerMask InteractableMask => _interactableMask;
     public TwoBoneIKConstraint LeftFootIkConstraint => _leftFootIkConstraint;
     public TwoBoneIKConstraint RightFootIkConstraint => _rightFootIkConstraint;
     public MultiRotationConstraint LeftFootMultiRotationConstraint => _leftFootMultiRotationConstraint;

@@ -30,10 +30,12 @@ public class
     [SerializeField] private CapsuleCollider rootCollider;
 
     private EnvironmentInteractionContext _context;
+    public LayerMask interactableMask;
 
     private void Awake()
     {
         _context = new EnvironmentInteractionContext(
+            interactableMask,
             leftFootIkConstraint,
             rightFootIkConstraint,
             leftFootMultiRotationConstraint,
