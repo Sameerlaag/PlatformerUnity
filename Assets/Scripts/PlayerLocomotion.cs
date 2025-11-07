@@ -8,8 +8,8 @@ public class PlayerLocomotion : MonoBehaviour
     public Rigidbody Rigidbody { get; private set; }
     private InputManager input;
     private WallRun wallRun;
-    [Header("Movement Settings")] public float moveSpeed = 2f;
-    public float runSpeed = 5f;
+    [Header("Movement Settings")] public float moveSpeed = 2.2f;
+    public float runSpeed = 6.8f;
     public float rotationSpeed = 15f;
     public float jumpForce = 5f;
     public LayerMask groundMask;

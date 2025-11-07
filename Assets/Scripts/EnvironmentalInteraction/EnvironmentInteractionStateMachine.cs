@@ -43,7 +43,8 @@ public class
             leftHandMultiRotationConstraint,
             rightHandMultiRotationConstraint,
             rigidbody,
-            rootCollider
+            rootCollider,
+            transform.root
         );
         InitializeStates();
         ValidateConstraints();

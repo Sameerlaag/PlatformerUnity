@@ -4395,8 +4395,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f349c4b5859066459b0155f92093a08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 2
-  runSpeed: 5
+  moveSpeed: 2.2
+  runSpeed: 6.8
   rotationSpeed: 15
   jumpForce: 5
   groundMask:

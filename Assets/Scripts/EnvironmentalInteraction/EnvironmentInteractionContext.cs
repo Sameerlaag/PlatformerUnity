@@ -14,6 +14,13 @@ public class EnvironmentInteractionContext
     private Rigidbody _rigidbody;
     private CapsuleCollider _rootCollider;
 
+    private Transform _rootTransform;
+    
+    public enum EBodySide
+    {
+        LEFT,
+        RIGHT
+    }
 
     public EnvironmentInteractionContext(
         TwoBoneIKConstraint leftFootIkConstraint, TwoBoneIKConstraint rightFootIkConstraint,
@@ -21,7 +28,8 @@ public class EnvironmentInteractionContext
         MultiRotationConstraint rightFootMultiRotationConstraint, TwoBoneIKConstraint leftHandIkConstraint,
         TwoBoneIKConstraint rightHandIkConstraint, MultiRotationConstraint leftHandMultiRotationConstraint,
         MultiRotationConstraint rightHandMultiRotationConstraint, Rigidbody rigidbody,
-        CapsuleCollider rootCollider)
+        CapsuleCollider rootCollider,
+        Transform rootTransform)
     {
         _leftFootIkConstraint = leftFootIkConstraint;
         _rightFootIkConstraint = rightFootIkConstraint;
@@ -33,6 +41,7 @@ public class EnvironmentInteractionContext
         _rightHandMultiRotationConstraint = rightHandMultiRotationConstraint;
         _rigidbody = rigidbody;
         _rootCollider = rootCollider;
+        _rootTransform = rootTransform;
     }
 
     public TwoBoneIKConstraint LeftFootIkConstraint => _leftFootIkConstraint;
@@ -45,4 +54,35 @@ public class EnvironmentInteractionContext
     public MultiRotationConstraint RightHandMultiRotationConstraint => _rightHandMultiRotationConstraint;
     public Rigidbody Rigidbody => _rigidbody;
     public CapsuleCollider RootCollider => _rootCollider;
+    public Transform RootTransform => _rootTransform;
+
+    public TwoBoneIKConstraint CurrentIkConstraint { get; private set; }
+    public MultiRotationConstraint CurrentMultiRotationConstraint { get; private set; }
+    public Transform CurrentIkTransform { get; private set; }
+    public Transform CurrentShoulderTransform { get; private set; }
+    public EBodySide CurrentBodySide { get; private set; }
+
+    public void SetCurrentSide(Vector3 positionToCheck)
+    {
+        Vector3 leftShoulder = _leftHandIkConstraint.data.root.transform.position;
+        Vector3 rightShoulder = _rightHandIkConstraint.data.root.transform.position;
+        bool isLeftCloser = Vector3.Distance(positionToCheck, leftShoulder) <
+                            Vector3.Distance(positionToCheck, rightShoulder);
+        if (isLeftCloser)
+        {
+            CurrentBodySide = EBodySide.LEFT;
+            CurrentIkConstraint = _leftFootIkConstraint;
+            CurrentMultiRotationConstraint = _leftFootMultiRotationConstraint;
+        }
+        else
+        {
+            CurrentBodySide = EBodySide.RIGHT;
+            CurrentIkConstraint = _rightFootIkConstraint;
+            CurrentMultiRotationConstraint = _rightFootMultiRotationConstraint;
+        }
+
+        CurrentIkTransform = CurrentIkConstraint.data.root.transform;
+        CurrentShoulderTransform = CurrentIkConstraint.data.target.transform;
+        Debug.Log(CurrentBodySide);
+    }
 }
