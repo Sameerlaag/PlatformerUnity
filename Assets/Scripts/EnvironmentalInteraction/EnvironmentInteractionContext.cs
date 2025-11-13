@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
+using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 
 public class EnvironmentInteractionContext
@@ -13,6 +14,10 @@ public class EnvironmentInteractionContext
     private TwoBoneIKConstraint _rightHandIkConstraint;
     private MultiRotationConstraint _leftHandMultiRotationConstraint;
     private MultiRotationConstraint _rightHandMultiRotationConstraint;
+    private Vector3 _leftHandOriginalTargetPosition;
+    private Vector3 _rightHandOriginalTargetPosition;
+    private Vector3 _leftFootOriginalTargetPosition;
+    private Vector3 _rightFootOriginalTargetPosition;
     private Rigidbody _rigidbody;
     private CapsuleCollider _rootCollider;
     private LayerMask _interactableMask;
@@ -46,8 +51,12 @@ public class EnvironmentInteractionContext
         _rigidbody = rigidbody;
         _rootCollider = rootCollider;
         _rootTransform = rootTransform;
-        
+        _leftHandOriginalTargetPosition = _leftHandIkConstraint.data.target.localPosition;
+        _rightHandOriginalTargetPosition = _rightHandIkConstraint.data.target.localPosition;
+        CurrentOriginalTargetRotation = _leftHandIkConstraint.data.target.rotation;
         CharacterShoulderHeight = leftHandIkConstraint.data.root.transform.position.y;
+
+        SetCurrentSide(Vector3.positiveInfinity);
     }
 
     public int InteractionLayer => _interactableMask;
@@ -71,6 +80,10 @@ public class EnvironmentInteractionContext
     public EBodySide CurrentBodySide { get; private set; }
     public Collider CurrentIntersectingCollider { get; set; }
     public Vector3 ClosestPointOnColliderFromShoulder { get; set; } = Vector3.positiveInfinity;
+    public float InteractionPointYOffset { get; set; }
+    public float ColliderCenterY { get; set; }
+    public Vector3 CurrentOriginalTargetPosition { get; private set; }
+    public Quaternion CurrentOriginalTargetRotation { get; private set; }
 
     public void SetCurrentSide(Vector3 positionToCheck)
     {
@@ -83,12 +96,14 @@ public class EnvironmentInteractionContext
             CurrentBodySide = EBodySide.LEFT;
             CurrentIkConstraint = _leftHandIkConstraint;
             CurrentMultiRotationConstraint = _leftHandMultiRotationConstraint;
+            CurrentOriginalTargetPosition = _leftHandOriginalTargetPosition;
         }
         else
         {
             CurrentBodySide = EBodySide.RIGHT;
             CurrentIkConstraint = _rightHandIkConstraint;
             CurrentMultiRotationConstraint = _rightHandMultiRotationConstraint;
+            CurrentOriginalTargetPosition = _rightHandOriginalTargetPosition;
         }
 
         CurrentIkTargetTransform = CurrentIkConstraint.data.root.transform;

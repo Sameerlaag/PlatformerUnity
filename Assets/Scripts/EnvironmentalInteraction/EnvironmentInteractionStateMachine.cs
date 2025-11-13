@@ -13,6 +13,8 @@ public class
         Approach,
         Start,
         Run,
+        Touch,
+        Rise,
         Stop,
         Jump,
         Reset
@@ -84,6 +86,8 @@ public class
         boxCollider.center = new Vector3(rootCollider.center.x, rootCollider.center.y + (.1f * wingspan),
             rootCollider.center.z + (.35f * wingspan));
         boxCollider.isTrigger = true;
+        
+        _context.ColliderCenterY = rootCollider.center.y;
     }
 
     private void InitializeStates()
@@ -95,6 +99,7 @@ public class
             new ApproachState(_context, EEnvironementInteractionState.Approach));
         States.Add(EEnvironementInteractionState.Start, new StartState(_context, EEnvironementInteractionState.Start));
         States.Add(EEnvironementInteractionState.Run, new RunState(_context, EEnvironementInteractionState.Run));
+        States.Add(EEnvironementInteractionState.Rise, new RiseState(_context, EEnvironementInteractionState.Rise));
         States.Add(EEnvironementInteractionState.Stop, new StopState(_context, EEnvironementInteractionState.Stop));
         States.Add(EEnvironementInteractionState.Jump, new JumpState(_context, EEnvironementInteractionState.Jump));
         CurrentState = States[EEnvironementInteractionState.Reset];
