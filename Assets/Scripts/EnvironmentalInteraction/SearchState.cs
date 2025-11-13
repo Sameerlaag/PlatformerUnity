@@ -2,6 +2,8 @@
 
 public class SearchState : EnvironmentInteractionState
 {
+    private float _approachDistanceThreshHold = 2.0f;
+
     public SearchState(EnvironmentInteractionContext context,
         EnvironmentInteractionStateMachine.EEnvironementInteractionState baseState) : base(context, baseState)
     {
@@ -10,6 +12,7 @@ public class SearchState : EnvironmentInteractionState
 
     public override void EnterState()
     {
+        Debug.Log("Entered SearchState");
     }
 
     public override void ExitState()
@@ -22,6 +25,13 @@ public class SearchState : EnvironmentInteractionState
 
     public override EnvironmentInteractionStateMachine.EEnvironementInteractionState GetNextState()
     {
+        bool isCloseToTarget =
+            Vector3.Distance(Context.ClosestPointOnColliderFromShoulder, Context.RootTransform.position) <
+            _approachDistanceThreshHold;
+        bool isClosetPointOnColliderValid = Context.ClosestPointOnColliderFromShoulder != Vector3.positiveInfinity;
+
+        if (isCloseToTarget && isClosetPointOnColliderValid)
+            return EnvironmentInteractionStateMachine.EEnvironementInteractionState.Approach;
         return StateKey;
     }
 
@@ -32,9 +42,11 @@ public class SearchState : EnvironmentInteractionState
 
     public override void OnTriggerStay(Collider other)
     {
+        UpdateIkTargetPosition(other);
     }
 
     public override void OnTriggerExit(Collider other)
     {
+        ResetIkTargetPositionTracking(other);
     }
 }

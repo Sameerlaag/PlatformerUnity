@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Numerics;
+using UnityEngine;
 using UnityEngine.Animations.Rigging;
+using Vector3 = UnityEngine.Vector3;
 
 public class EnvironmentInteractionContext
 {
@@ -44,10 +46,12 @@ public class EnvironmentInteractionContext
         _rigidbody = rigidbody;
         _rootCollider = rootCollider;
         _rootTransform = rootTransform;
+        
+        CharacterShoulderHeight = leftHandIkConstraint.data.root.transform.position.y;
     }
 
     public int InteractionLayer => _interactableMask;
-
+    public float CharacterShoulderHeight { get; set; }
     public TwoBoneIKConstraint LeftFootIkConstraint => _leftFootIkConstraint;
     public TwoBoneIKConstraint RightFootIkConstraint => _rightFootIkConstraint;
     public MultiRotationConstraint LeftFootMultiRotationConstraint => _leftFootMultiRotationConstraint;
@@ -62,9 +66,11 @@ public class EnvironmentInteractionContext
 
     public TwoBoneIKConstraint CurrentIkConstraint { get; private set; }
     public MultiRotationConstraint CurrentMultiRotationConstraint { get; private set; }
-    public Transform CurrentIkTransform { get; private set; }
+    public Transform CurrentIkTargetTransform { get; private set; }
     public Transform CurrentShoulderTransform { get; private set; }
     public EBodySide CurrentBodySide { get; private set; }
+    public Collider CurrentIntersectingCollider { get; set; }
+    public Vector3 ClosestPointOnColliderFromShoulder { get; set; } = Vector3.positiveInfinity;
 
     public void SetCurrentSide(Vector3 positionToCheck)
     {
@@ -75,17 +81,17 @@ public class EnvironmentInteractionContext
         if (isLeftCloser)
         {
             CurrentBodySide = EBodySide.LEFT;
-            CurrentIkConstraint = _leftFootIkConstraint;
-            CurrentMultiRotationConstraint = _leftFootMultiRotationConstraint;
+            CurrentIkConstraint = _leftHandIkConstraint;
+            CurrentMultiRotationConstraint = _leftHandMultiRotationConstraint;
         }
         else
         {
             CurrentBodySide = EBodySide.RIGHT;
-            CurrentIkConstraint = _rightFootIkConstraint;
-            CurrentMultiRotationConstraint = _rightFootMultiRotationConstraint;
+            CurrentIkConstraint = _rightHandIkConstraint;
+            CurrentMultiRotationConstraint = _rightHandMultiRotationConstraint;
         }
 
-        CurrentIkTransform = CurrentIkConstraint.data.root.transform;
+        CurrentIkTargetTransform = CurrentIkConstraint.data.root.transform;
         CurrentShoulderTransform = CurrentIkConstraint.data.target.transform;
         Debug.Log(CurrentBodySide);
     }

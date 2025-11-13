@@ -53,6 +53,14 @@ public class
         ConstructEnvironmentDetectionCollider();
     }
 
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        if (_context != null && _context.ClosestPointOnColliderFromShoulder != null)
+        {
+            Gizmos.DrawSphere(_context.ClosestPointOnColliderFromShoulder, .03f);
+        }
+    }
     private void ValidateConstraints()
     {
         Assert.IsNotNull(leftFootIkConstraint, "Left Foot IK constraint is not assigned.");
@@ -89,7 +97,7 @@ public class
         States.Add(EEnvironementInteractionState.Run, new RunState(_context, EEnvironementInteractionState.Run));
         States.Add(EEnvironementInteractionState.Stop, new StopState(_context, EEnvironementInteractionState.Stop));
         States.Add(EEnvironementInteractionState.Jump, new JumpState(_context, EEnvironementInteractionState.Jump));
-        CurrentState = States[EEnvironementInteractionState.Search];
+        CurrentState = States[EEnvironementInteractionState.Reset];
         Debug.Log(CurrentState);
     }
 }
