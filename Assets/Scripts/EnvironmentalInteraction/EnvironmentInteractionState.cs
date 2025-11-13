@@ -18,7 +18,7 @@ public abstract class
 
     protected void StartIkTargetPositionTracking(Collider intersectingCollider)
     {
-        if (intersectingCollider.gameObject.layer.Equals(Context.InteractableMask))
+        if (intersectingCollider.gameObject.layer == Context.InteractionLayer)
         {
             Vector3 closedPointFromRoot =
                 GetClosestPointOnCollider(intersectingCollider, Context.RootTransform.position);

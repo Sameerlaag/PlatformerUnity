@@ -23,7 +23,7 @@ public class EnvironmentInteractionContext
     }
 
     public EnvironmentInteractionContext(
-        LayerMask interactableMask,
+        int interactableMask,
         TwoBoneIKConstraint leftFootIkConstraint, TwoBoneIKConstraint rightFootIkConstraint,
         MultiRotationConstraint leftFootMultiRotationConstraint,
         MultiRotationConstraint rightFootMultiRotationConstraint, TwoBoneIKConstraint leftHandIkConstraint,
@@ -46,7 +46,8 @@ public class EnvironmentInteractionContext
         _rootTransform = rootTransform;
     }
 
-    public LayerMask InteractableMask => _interactableMask;
+    public int InteractionLayer => _interactableMask;
+
     public TwoBoneIKConstraint LeftFootIkConstraint => _leftFootIkConstraint;
     public TwoBoneIKConstraint RightFootIkConstraint => _rightFootIkConstraint;
     public MultiRotationConstraint LeftFootMultiRotationConstraint => _leftFootMultiRotationConstraint;

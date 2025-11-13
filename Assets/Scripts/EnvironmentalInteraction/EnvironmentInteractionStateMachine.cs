@@ -30,12 +30,12 @@ public class
     [SerializeField] private CapsuleCollider rootCollider;
 
     private EnvironmentInteractionContext _context;
-    public LayerMask interactableMask;
+    private int interactableMask;
 
     private void Awake()
     {
         _context = new EnvironmentInteractionContext(
-            interactableMask,
+            LayerMask.NameToLayer("Runwall"),
             leftFootIkConstraint,
             rightFootIkConstraint,
             leftFootMultiRotationConstraint,
@@ -89,6 +89,7 @@ public class
         States.Add(EEnvironementInteractionState.Run, new RunState(_context, EEnvironementInteractionState.Run));
         States.Add(EEnvironementInteractionState.Stop, new StopState(_context, EEnvironementInteractionState.Stop));
         States.Add(EEnvironementInteractionState.Jump, new JumpState(_context, EEnvironementInteractionState.Jump));
-        CurrentState = States[EEnvironementInteractionState.Reset];
+        CurrentState = States[EEnvironementInteractionState.Search];
+        Debug.Log(CurrentState);
     }
 }
