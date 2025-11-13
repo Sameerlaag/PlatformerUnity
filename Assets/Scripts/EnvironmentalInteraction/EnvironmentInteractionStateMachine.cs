@@ -58,7 +58,7 @@ public class
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        if (_context != null && _context.ClosestPointOnColliderFromShoulder != null)
+        if (_context != null && _context.ClosestPointOnColliderFromShoulder != Vector3.positiveInfinity)
         {
             Gizmos.DrawSphere(_context.ClosestPointOnColliderFromShoulder, .03f);
         }
