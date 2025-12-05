@@ -10,6 +10,7 @@ public class RiseState : EnvironmentInteractionState
 
     public override void EnterState()
     {
+        Debug.Log("Entering RiseState");
     }
 
     public override void ExitState()
@@ -27,13 +28,16 @@ public class RiseState : EnvironmentInteractionState
 
     public override void OnTriggerEnter(Collider other)
     {
+        StartIkTargetPositionTracking(other);
     }
 
     public override void OnTriggerStay(Collider other)
     {
+        UpdateIkTargetPosition(other);
     }
 
     public override void OnTriggerExit(Collider other)
     {
+        ResetIkTargetPositionTracking(other);
     }
 }

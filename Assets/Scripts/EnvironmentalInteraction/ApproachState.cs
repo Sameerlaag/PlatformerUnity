@@ -50,8 +50,7 @@ public class ApproachState : EnvironmentInteractionState
             return EnvironmentInteractionStateMachine.EEnvironementInteractionState.Reset;
         }
         bool isWithinArmsReach =
-            Vector3.Distance(Context.ClosestPointOnColliderFromShoulder, Context.CurrentShoulderTransform.position) <
-            _riseDistancethreshold;
+            Vector3.Distance(Context.ClosestPointOnColliderFromShoulder, Context.CurrentShoulderTransform.position) < _riseDistancethreshold;
         bool isClosestPointOnColliderRead = Context.ClosestPointOnColliderFromShoulder != Vector3.positiveInfinity;
         if (isClosestPointOnColliderRead && isWithinArmsReach)
         {

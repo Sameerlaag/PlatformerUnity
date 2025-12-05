@@ -54,8 +54,8 @@
     <Compile Include="Assets\Scripts\PlayerManager.cs" />
     <Compile Include="Assets\Scripts\InputManager.cs" />
     <Compile Include="Assets\Scripts\CameraBehavior.cs" />
-    <Compile Include="Assets\DoubleL\Demo\DemoCameraController.cs" />
     <Compile Include="Assets\Scripts\EnvironmentalInteraction\RiseState.cs" />
+    <Compile Include="Assets\DoubleL\Demo\DemoCameraController.cs" />
     <Compile Include="Assets\Scripts\StateManager\StateManager.cs" />
     <Compile Include="Assets\Scripts\EnvironmentalInteraction\ResetState.cs" />
     <Compile Include="Assets\Scripts\WallRun.cs" />
